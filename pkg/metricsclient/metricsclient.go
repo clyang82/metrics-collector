@@ -45,6 +45,7 @@ var (
 		Name: "metricsclient_request_send",
 		Help: "Tracks the number of metrics sends",
 	}, []string{"client", "status_code"})
+	timeseriesNumMap = make(map[string]int)
 )
 
 func init() {
@@ -377,6 +378,20 @@ func (c *Client) RemoteWrite(ctx context.Context, req *http.Request,
 		return nil
 	}
 	logger.Log(c.logger, logger.Debug, "timeseries number", len(timeseries))
+
+	for k := range timeseriesNumMap {
+		delete(timeseriesNumMap, k)
+	}
+
+	for i := 0; i < len(timeseries); i++ {
+		for _, label := range timeseries[i].Labels {
+			if label.Name == "__name__" {
+				timeseriesNumMap[label.Value] += 1
+				break
+			}
+		}
+	}
+	fmt.Println("timeseries", timeseriesNumMap)
 
 	for i := 0; i < len(timeseries); i += maxSeriesLength {
 		length := len(timeseries)
